@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAVID Character Figurine Carousel</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const IMAGES = [
+            { 
+                src: 'https://github.com/weixubo281-code/tupian0524/blob/main/01maotouying.png?raw=true', 
+                bg: '#E5DACE', 
+                panel: '#F0E5D8',
+                name: 'ATHENA OWL',
+                description: 'A symbol of wisdom and dynamic architecture. The smooth contours of the Athena Owl bring a futuristic, cubist charm to any modern collection.'
+            },
+            { 
+                src: 'https://github.com/weixubo281-code/tupian0524/blob/main/02hashiqi.png?raw=true', 
+                bg: '#7B8FA1', 
+                panel: '#8DA1B3',
+                name: 'KINETIC HUSKY',
+                description: 'Capturing the raw energy of northern winds. Featuring a faceted geometric chassis with high-intensity polished facets.'
+            },
+            { 
+                src: 'https://github.com/weixubo281-code/tupian0524/blob/main/03jinmao.png?raw=true', 
+                bg: '#E79A58', 
+                panel: '#EFA96D',
+                name: 'AURUM RETRIEVER',
+                description: 'Warmth rendered in pure golden physical polygon art. Radiates a cheerful presence with premium satin polymer finish.'
+            },
+            { 
+                src: 'https://github.com/weixubo281-code/tupian0524/blob/main/04huli.png?raw=true', 
+                bg: '#B28465', 
+                panel: '#C19376',
+                name: 'EMBER FOX',
+                description: 'An enigmatic low-poly sculpture depicting raw forest nature. Dynamic angles highlight deep desert shades and modern lines.'
+            },
+        ];
+
+        const GRAIN_SVG_URI = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E`;
+
+        function App() {
+            const [activeIndex, setActiveIndex] = useState(0);
+            const [isAnimating, setIsAnimating] = useState(false);
+            const [isMobile, setIsMobile] = useState(false);
+            const [loadedImages, setLoadedImages] = useState(0);
+            const [showInfoModal, setShowInfoModal] = useState(false);
+
+            const touchStartX = useRef(0);
+            const touchEndX = useRef(0);
+
+            useEffect(() => {
+                const checkMobile = () => {
+                    setIsMobile(window.innerWidth < 640);
+                };
+                checkMobile();
+                window.addEventListener('resize', checkMobile);
+
+                IMAGES.forEach((img) => {
+                    const newImg = new Image();
+                    newImg.src = img.src;
+                    newImg.onload = () => {
+                        setLoadedImages((prev) => prev + 1);
+                    };
+                });
+
+                const handleKeyDown = (e) => {
+                    if (e.key === 'ArrowRight') {
+                        navigate('next');
+                    } else if (e.key === 'ArrowLeft') {
+                        navigate('prev');
+                    }
+                };
+                window.addEventListener('keydown', handleKeyDown);
+
+                return () => {
+                    window.removeEventListener('resize', checkMobile);
+                    window.removeEventListener('keydown', handleKeyDown);
+                };
+            }, []);
+
+            const navigate = (direction) => {
+                if (isAnimating) return;
+                setIsAnimating(true);
+
+                if (direction === 'next') {
+                    setActiveIndex((prev) => (prev + 1) % 4);
+                } else {
+                    setActiveIndex((prev) => (prev + 3) % 4);
+                }
+
+                setTimeout(() => {
+                    setIsAnimating(false);
+                }, 650);
+            };
+
+            const handleTouchStart = (e) => {
+                touchStartX.current = e.targetTouches[0].clientX;
+            };
+
+            const handleTouchMove = (e) => {
+                touchEndX.current = e.targetTouches[0].clientX;
+            };
+
+            const handleTouchEnd = () => {
+                if (!touchStartX.current || !touchEndX.current) return;
+                const diff = touchStartX.current - touchEndX.current;
+                const swipeThreshold = 50;
+
+                if (Math.abs(diff) > swipeThreshold) {
+                    if (diff > 0) {
+                        navigate('next');
+                    } else {
+                        navigate('prev');
+                    }
+                }
+                touchStartX.current = 0;
+                touchEndX.current = 0;
+            };
+
+            const getRole = (index) => {
+                if (index === activeIndex) return 'center';
+                if (index === (activeIndex + 3) % 4) return 'left';
+                if (index === (activeIndex + 1) % 4) return 'right';
+                return 'back';
+            };
+
+            const getRoleStyle = (role) => {
+                switch (role) {
+                    case 'center':
+                        return {
+                            transform: `translateX(-50%) scale(${isMobile ? 1.25 : 1.68})`,
+                            filter: 'blur(0px)',
+                            opacity: 1,
+                            zIndex: 20,
+                            left: '50%',
+                            height: isMobile ? '60%' : '92%',
+                            bottom: isMobile ? '22%' : '0px',
+                        };
+                    case 'left':
+                        return {
+                            transform: 'translateX(-50%) scale(1)',
+                            filter: 'blur(2px)',
+                            opacity: 0.85,
+                            zIndex: 10,
+                            left: isMobile ? '20%' : '30%',
+                            height: isMobile ? '16%' : '28%',
+                            bottom: isMobile ? '32%' : '12%',
+                        };
+                    case 'right':
+                        return {
+                            transform: 'translateX(-50%) scale(1)',
+                            filter: 'blur(2px)',
+                            opacity: 0.85,
+                            zIndex: 10,
+                            left: isMobile ? '80%' : '70%',
+                            height: isMobile ? '16%' : '28%',
+                            bottom: isMobile ? '32%' : '12%',
+                        };
+                    case 'back':
+                    default:
+                        return {
+                            transform: 'translateX(-50%) scale(1)',
+                            filter: 'blur(4px)',
+                            opacity: 1,
+                            zIndex: 5,
+                            left: '50%',
+                            height: isMobile ? '13%' : '22%',
+                            bottom: isMobile ? '32%' : '12%',
+                        };
+                }
+            };
+
+            return (
+                <div
+                    style={{
+                        backgroundColor: IMAGES[activeIndex].bg,
+                        transition: 'background-color 650ms cubic-bezier(0.4, 0, 0.2, 1)',
+                        fontFamily: "'Inter', sans-serif",
+                    }}
+                    className="relative w-full overflow-hidden select-none transition-all duration-700"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                >
+                    <div className="relative w-full h-screen overflow-hidden flex flex-col justify-between">
+                        
+                        {/* 噪点背景纹理 */}
+                        <div
+                            style={{
+                                backgroundImage: `url("${GRAIN_SVG_URI}")`,
+                                backgroundSize: '200px 200px',
+                            }}
+                            className="absolute inset-0 pointer-events-none z-[50] opacity-40 mix-blend-overlay repeat"
+                        />
+
+                        {/* 环境渐变暗影 */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/10 pointer-events-none z-10" />
+
+                        {/* 顶部 Brand 导航栏 */}
+                        <header className="absolute top-6 left-4 right-4 sm:left-8 sm:right-8 flex items-center justify-between z-[60]">
+                            <div className="flex items-center space-x-3">
+                                <span className="text-xs font-semibold uppercase text-white tracking-[0.18em]">
+                                    DAVID
+                                </span>
+                                <div className="h-px w-8 bg-white/30 hidden sm:block" />
+                                <span className="text-[10px] text-white/50 tracking-widest hidden sm:inline uppercase">
+                                    Limited Edition Figurines
+                                </span>
+                            </div>
+
+                            <div className="flex items-center space-x-6 text-white text-[11px] font-medium tracking-wider">
+                                <div className="flex items-center space-x-1 opacity-70 hover:opacity-100 transition-opacity cursor-pointer hidden md:flex">
+                                    <i data-lucide="compass" style={{width: '13px', height: '13px'}}></i>
+                                    <span>DRAG OR TAP SWIPE SUPPORTED</span>
+                                </div>
+                                
+                                <button 
+                                    onClick={() => setShowInfoModal(true)}
+                                    className="flex items-center space-x-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full transition-all duration-300 cursor-pointer"
+                                >
+                                    <i data-lucide="help-circle" style={{width: '13px', height: '13px'}}></i>
+                                    <span>DETAILS</span>
+                                </button>
+                            </div>
+                        </header>
+
+                        {/* 居中巨大文字背衬 */}
+                        <div 
+                            style={{ top: '18%' }}
+                            className="absolute inset-x-0 flex flex-col items-center justify-center pointer-events-none select-none z-[2]"
+                        >
+                            <span
+                                style={{
+                                    fontFamily: "'Anton', sans-serif",
+                                    fontSize: 'clamp(90px, 28vw, 380px)',
+                                    lineHeight: 1,
+                                    letterSpacing: '-0.02em',
+                                }}
+                                className="text-white font-black uppercase text-center tracking-tighter opacity-100"
+                            >
+                                3D SHAPE
+                            </span>
+                            
+                            <div className="flex items-center space-x-2 text-white/40 text-[11px] font-semibold tracking-[0.4em] uppercase -mt-1 sm:-mt-4">
+                                <span>SERIES No. 0{activeIndex + 1}</span>
+                                <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
+                                <span>{IMAGES[activeIndex].name}</span>
+                            </div>
+                        </div>
+
+                        {/* 3D 手办轮播区 */}
+                        <div className="absolute inset-0 z-[3] overflow-hidden flex items-end justify-center pointer-events-none">
+                            <div className="relative w-full h-full max-w-[1920px] mx-auto">
+                                {IMAGES.map((img, index) => {
+                                    const role = getRole(index);
+                                    const dynamicStyle = getRoleStyle(role);
+                                    const isActive = index === activeIndex;
+
+                                    return (
+                                        <div
+                                            key={index}
+                                            style={{
+                                                position: 'absolute',
+                                                aspectRatio: '0.6 / 1',
+                                                willChange: 'transform, filter, opacity',
+                                                transition: 'transform 650ms cubic-bezier(0.4, 0, 0.2, 1), filter 650ms cubic-bezier(0.4, 0, 0.2, 1), opacity 650ms cubic-bezier(0.4, 0, 0.2, 1), left 650ms cubic-bezier(0.4, 0, 0.2, 1), height 650ms cubic-bezier(0.4, 0, 0.2, 1), bottom 650ms cubic-bezier(0.4, 0, 0.2, 1)',
+                                                ...dynamicStyle,
+                                            }}
+                                            className="pointer-events-auto cursor-pointer group"
+                                            onClick={() => {
+                                                if (!isActive && !isAnimating) {
+                                                    if (role === 'left') navigate('prev');
+                                                    if (role === 'right') navigate('next');
+                                                }
+                                            }}
+                                        >
+                                            {role === 'center' && (
+                                                <div 
+                                                    style={{ background: `radial-gradient(circle, ${IMAGES[activeIndex].panel} 0%, transparent 70%)` }}
+                                                    className="absolute bottom-[-10%] left-1/2 -translate-x-1/2 w-[120%] h-[30%] opacity-40 blur-xl pointer-events-none rounded-full"
+                                                />
+                                            )}
+
+                                            <img
+                                                src={img.src}
+                                                alt={`David Figurine ${img.name}`}
+                                                draggable={false}
+                                                className="w-full h-full object-contain object-bottom select-none group-hover:brightness-105 transition-all duration-300"
+                                            />
+
+                                            <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center justify-center space-x-1.5 bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] text-white/90 border border-white/10 transition-opacity duration-300 ${role === 'center' ? 'opacity-100' : 'opacity-0'}`}>
+                                                <i data-lucide="sparkles" style={{width: '10px', height: '10px', color: '#fef08a'}} className="animate-pulse"></i>
+                                                <span className="font-semibold tracking-wider">0{index + 1}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* 右侧指示器连点 */}
+                        <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col space-y-4 z-50 hidden lg:flex">
+                            {IMAGES.map((_, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => {
+                                        if (!isAnimating && idx !== activeIndex) {
+                                            setActiveIndex(idx);
+                                        }
+                                    }}
+                                    className="flex items-center group focus:outline-none cursor-pointer"
+                                >
+                                    <span className={`text-[10px] font-bold tracking-widest mr-3 transition-all duration-300 ${idx === activeIndex ? 'text-white translate-x-0 opacity-100' : 'text-white/30 translate-x-2 opacity-0 group-hover:opacity-75'}`}>
+                                        0{idx + 1}
+                                    </span>
+                                    <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${idx === activeIndex ? 'bg-white scale-150 shadow-[0_0_10px_rgba(255,255,255,0.8)]' : 'bg-white/30 hover:bg-white/60'}`} />
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* 左下角文案与操作按钮组 */}
+                        <div className="absolute bottom-6 left-4 sm:bottom-20 sm:left-24 z-[60] max-w-[320px] text-white">
+                            <p className="text-base sm:text-[22px] font-bold uppercase tracking-widest mb-2 sm:mb-3 opacity-95 flex items-center space-x-2">
+                                <span className="font-extrabold">{IMAGES[activeIndex].name}</span>
+                            </p>
+
+                            <p className="hidden sm:block text-xs sm:text-sm text-white/85 leading-[1.6] mb-4 sm:mb-5 font-normal">
+                                {IMAGES[activeIndex].description}
+                            </p>
+
+                            <div className="flex items-center space-x-3 mt-2 sm:mt-0">
+                                <button
+                                    onClick={() => navigate('prev')}
+                                    disabled={isAnimating}
+                                    aria-label="Previous Figurine"
+                                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-transparent border-2 border-white/60 text-white flex items-center justify-center hover:scale-105 hover:bg-white/10 active:scale-95 transition-all duration-300 disabled:opacity-50 cursor-pointer"
+                                >
+                                    <i data-lucide="arrow-left" style={{width: '26px', height: '26px'}}></i>
+                                </button>
+
+                                <button
+                                    onClick={() => navigate('next')}
+                                    disabled={isAnimating}
+                                    aria-label="Next Figurine"
+                                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-transparent border-2 border-white/60 text-white flex items-center justify-center hover:scale-105 hover:bg-white/10 active:scale-95 transition-all duration-300 disabled:opacity-50 cursor-pointer"
+                                >
+                                    <i data-lucide="arrow-right" style={{width: '26px', height: '26px'}}></i>
+                                </button>
+
+                                <span className="text-xs tracking-[0.2em] opacity-55 pl-3 hidden sm:inline-block font-medium">
+                                    SWIPE / CLICK SIDES
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* 右下角 Discover IT */}
+                        <div className="absolute bottom-6 right-4 sm:bottom-20 sm:right-10 z-[60]">
+                            <a
+                                href="#discover"
+                                style={{
+                                    fontFamily: "'Anton', sans-serif",
+                                    fontSize: 'clamp(20px, 4vw, 56px)',
+                                    letterSpacing: '-0.02em',
+                                    lineHeight: 1,
+                                }}
+                                className="flex items-center space-x-2 sm:space-x-3 uppercase text-white tracking-normal opacity-95 hover:opacity-100 transition-opacity duration-200 no-underline cursor-pointer group"
+                            >
+                                <span>DISCOVER IT</span>
+                                <i data-lucide="arrow-right" className="transform group-hover:translate-x-2 transition-transform duration-300" style={{width: '24px', height: '24px'}}></i>
+                            </a>
+                        </div>
+
+                        {/* 底部彩色色条进度条 */}
+                        <div className="absolute bottom-0 left-0 right-0 h-1 z-10 flex">
+                            {IMAGES.map((img, i) => (
+                                <div
+                                    key={i}
+                                    style={{
+                                        backgroundColor: img.panel,
+                                        width: '25%',
+                                        opacity: i === activeIndex ? 1 : 0.2,
+                                        transition: 'opacity 650ms ease-in-out',
+                                    }}
+                                    className="h-full"
+                                />
+                            ))}
+                        </div>
+
+                    </div>
+
+                    {/* 详情浮窗 Modal */}
+                    {showInfoModal && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 transition-all">
+                            <div className="bg-[#1C1C1E] text-white max-w-md w-full rounded-2xl p-6 relative border border-white/10 shadow-2xl">
+                                <h3 className="text-xl font-extrabold uppercase tracking-wide mb-4">DAVID Figurine Tech Specifications</h3>
+                                
+                                <div className="space-y-4 text-sm text-white/80">
+                                    <div className="flex justify-between border-b border-white/5 pb-2">
+                                        <span className="text-white/50">Collection Status</span>
+                                        <span className="text-yellow-400 font-semibold">Active Series 2026</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-white/5 pb-2">
+                                        <span className="text-white/50">Polygons Count</span>
+                                        <span>~25,000 Low-Poly Facets</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-white/5 pb-2">
+                                        <span className="text-white/50">Material</span>
+                                        <span>Polished Liquid PLA Resin</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-white/5 pb-2">
+                                        <span className="text-white/50">Dimensions</span>
+                                        <span>280mm x 150mm x 120mm</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-white/5 pb-2">
+                                        <span className="text-white/50">Art Director</span>
+                                        <span>Studio DAVID 3D Labs</span>
+                                    </div>
+                                    <p className="text-xs text-white/60 leading-relaxed mt-4">
+                                        The DAVID collection merges retro 3D polygon modeling with exquisite real-world tactile production techniques. Each figurine is individually numbered with embedded digital signatures.
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={() => setShowInfoModal(false)}
+                                    className="w-full mt-6 bg-white text-black py-2.5 rounded-lg text-sm font-bold tracking-wider uppercase hover:bg-neutral-200 transition-colors cursor-pointer"
+                                >
+                                    Close Details
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // 初始化渲染并激活 Lucide 图标集
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+        
+        // 确保 React 渲染 DOM 后，Lucide 图标被正确扫描并实例化
+        setTimeout(() => {
+            lucide.createIcons();
+        }, 100);
+    </script>
+</body>
+</html>
